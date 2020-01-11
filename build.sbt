@@ -48,3 +48,9 @@ lazy val `miniapp-stream-impl` = (project in file("miniapp-stream-impl"))
     )
   )
   .dependsOn(`miniapp-stream-api`, `miniapp-api`)
+
+// kubernetes [dev,test,prod]
+lagomCassandraEnabled in ThisBuild := false
+lagomUnmanagedServices in ThisBuild := Map("cas_native" -> "tcp://miniapp-cassandra-nodeport-service:9042")
+
+lagomKafkaEnabled in ThisBuild := false
