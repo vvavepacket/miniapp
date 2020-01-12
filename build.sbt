@@ -1,11 +1,12 @@
 organization in ThisBuild := "com.gxhr"
-version in ThisBuild := "0.1.0"
+version in ThisBuild := "0.1.2"
 
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.12.8"
 
 val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.0" % "provided"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.0.4" % Test
+val akkaDiscoveryKubernetesApi = "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % "1.0.0"
 
 lazy val `miniapp` = (project in file("."))
   .aggregate(`miniapp-api`, `miniapp-impl`, `miniapp-stream-api`, `miniapp-stream-impl`)
@@ -25,11 +26,14 @@ lazy val `miniapp-impl` = (project in file("miniapp-impl"))
       lagomScaladslKafkaBroker,
       lagomScaladslTestKit,
       macwire,
-      scalaTest
+      scalaTest,
+      lagomScaladslAkkaDiscovery,
+      akkaDiscoveryKubernetesApi
     )
   )
   .settings(lagomForkedTestSettings)
   .dependsOn(`miniapp-api`)
+  .settings(dockerExposedPorts := Seq(9000, 9001))
 
 lazy val `miniapp-stream-api` = (project in file("miniapp-stream-api"))
   .settings(
@@ -51,6 +55,9 @@ lazy val `miniapp-stream-impl` = (project in file("miniapp-stream-impl"))
 
 // kubernetes [dev,test,prod]
 lagomCassandraEnabled in ThisBuild := false
-lagomUnmanagedServices in ThisBuild := Map("cas_native" -> "tcp://miniapp-cassandra-nodeport-service:9042")
-
+// this works only in dev
+//lagomUnmanagedServices in ThisBuild := Map("cas_native" -> "tcp://miniapp-cassandra-nodeport-service:9042")
+lagomUnmanagedServices in ThisBuild := Map("cas_native" -> "tcp://192.168.64.5:31043")
 lagomKafkaEnabled in ThisBuild := false
+//lagomServiceLocatorAddress in ThisBuild := "0.0.0.0"
+//lagomServiceGatewayAddress in ThisBuild := "0.0.0.0"

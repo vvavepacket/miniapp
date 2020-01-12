@@ -33,7 +33,7 @@ class MiniappServiceImpl(persistentEntityRegistry: PersistentEntityRegistry) ext
 
   override def status(id: String) = ServiceCall { _ =>
     entityRef(id)
-      .ask(Status())
+      .ask(Status(id))
       .map(state => Miniapp(state.name, state.userId, state.version, state.tags, state.createdTS, state.status, state.fileName))
   }
 
@@ -44,17 +44,17 @@ class MiniappServiceImpl(persistentEntityRegistry: PersistentEntityRegistry) ext
 
   override def reject(id: String) = ServiceCall { request =>
     entityRef(id)
-      .ask(Reject())
+      .ask(Reject(id))
   }
 
   override def submitForReview(id: String) = ServiceCall { request =>
     entityRef(id)
-      .ask(SubmitForReview())
+      .ask(SubmitForReview(id))
   }
 
   override def approve(id: String) = ServiceCall { request =>
     entityRef(id)
-      .ask(Approve())
+      .ask(Approve(id))
   }
 
   override def hello(id: String) = ServiceCall { _ =>

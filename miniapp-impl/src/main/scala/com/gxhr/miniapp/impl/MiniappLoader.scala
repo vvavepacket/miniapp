@@ -6,17 +6,18 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceCo
 import com.lightbend.lagom.scaladsl.server._
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import play.api.libs.ws.ahc.AhcWSComponents
-import com.gxhr.miniapp.api.MiniappService
+import com.gxhr.miniapp.api.{MiniappService, UploadMessageDone}
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
-import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
+import com.lightbend.lagom.scaladsl.playjson.{JsonSerializer, JsonSerializerRegistry}
 import com.softwaremill.macwire._
+import com.lightbend.lagom.scaladsl.akka.discovery.AkkaDiscoveryComponents
+import com.lightbend.lagom.scaladsl.client.ConfigurationServiceLocatorComponents
 
 class MiniappLoader extends LagomApplicationLoader {
 
   override def load(context: LagomApplicationContext): LagomApplication =
-    new MiniappApplication(context) {
-      override def serviceLocator: ServiceLocator = NoServiceLocator
-    }
+    new MiniappApplication(context)
+      with ConfigurationServiceLocatorComponents
 
   override def loadDevMode(context: LagomApplicationContext): LagomApplication =
     new MiniappApplication(context) with LagomDevModeComponents

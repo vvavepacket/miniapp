@@ -71,21 +71,21 @@ class MiniappEntity extends PersistentEntity {
           ctx.reply(Done)
         }
     }.onCommand[SubmitForReview, Done] {
-      case (SubmitForReview(), ctx, state) =>
+      case (SubmitForReview(id), ctx, state) =>
         ctx.thenPersist(
           SubmittedForReview(Instant.now())
         ) { _ =>
           ctx.reply(Done)
         }
     }.onCommand[Approve, Done] {
-      case (Approve(), ctx, state) =>
+      case (Approve(id), ctx, state) =>
         ctx.thenPersist(
           Approved(Instant.now())
         ) { _ =>
           ctx.reply(Done)
         }
     }.onCommand[Reject, Done] {
-      case (Reject(), ctx, state) =>
+      case (Reject(id), ctx, state) =>
         ctx.thenPersist(
           Rejected(Instant.now())
         ) { _ =>
@@ -99,7 +99,7 @@ class MiniappEntity extends PersistentEntity {
           ctx.reply(Done)
         }
     }.onReadOnlyCommand[Status, MiniappState] {
-      case (Status(), ctx, state) =>
+      case (Status(id), ctx, state) =>
         if (state.name == "" && state.userId == "")
           ctx.commandFailed(MiniappException("Entity not found"))
         else
@@ -245,28 +245,28 @@ object UploadNewVersion {
   implicit val format: Format[UploadNewVersion] = Json.format
 }
 
-case class SubmitForReview() extends MiniappCommand[Done]
+case class SubmitForReview(id: String) extends MiniappCommand[Done]
 
 object SubmitForReview {
-  implicit val format: Format[SubmitForReview.type] = Json.format
+  implicit val format: Format[SubmitForReview] = Json.format
 }
 
-case class Approve() extends MiniappCommand[Done]
+case class Approve(id: String) extends MiniappCommand[Done]
 
 object Approve {
-  implicit val format: Format[Approve.type] = Json.format
+  implicit val format: Format[Approve] = Json.format
 }
 
-case class Reject() extends MiniappCommand[Done]
+case class Reject(id: String) extends MiniappCommand[Done]
 
 object Reject {
-  implicit val format: Format[Reject.type] = Json.format
+  implicit val format: Format[Reject] = Json.format
 }
 
-case class Status() extends MiniappCommand[MiniappState]
+case class Status(id: String) extends MiniappCommand[MiniappState]
 
 object Status {
-  implicit val format: Format[Status.type] = Json.format
+  implicit val format: Format[Status] = Json.format
 }
 
 case class UploadMiniappFile(fileName: String) extends MiniappCommand[Done]
@@ -339,14 +339,17 @@ object MiniappSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[Hello],
     JsonSerializer[GreetingMessageChanged],
     JsonSerializer[MiniappState],
+    JsonSerializer[MiniappException],
+    // response
+    JsonSerializer[UploadMessageDone],
     // command
     JsonSerializer[Upload],
     JsonSerializer[Edit],
     JsonSerializer[UploadNewVersion],
-    JsonSerializer[SubmitForReview.type],
-    JsonSerializer[Approve.type],
-    JsonSerializer[Reject.type],
-    JsonSerializer[Status.type],
+    JsonSerializer[SubmitForReview],
+    JsonSerializer[Approve],
+    JsonSerializer[Reject],
+    JsonSerializer[Status],
     JsonSerializer[UploadMiniappFile],
     // event
     JsonSerializer[Uploaded],
