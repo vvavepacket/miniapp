@@ -17,6 +17,7 @@ object MiniappService  {
   * <p>
   * This describes everything that Lagom needs to know about how to serve and
   * consume the MiniappService.
+  * added test
   */
 trait MiniappService extends Service {
 
@@ -46,7 +47,7 @@ trait MiniappService extends Service {
     // @formatter:off
     named("miniapp")
       .withCalls(
-        //pathCall("/api/hello/:id", hello _),
+        pathCall("/api/hello/:id", hello _),
         //pathCall("/api/hello/:id", useGreeting _)
         pathCall("/miniapp/upload", upload _),
         pathCall("/miniapp/edit/:id", edit _),

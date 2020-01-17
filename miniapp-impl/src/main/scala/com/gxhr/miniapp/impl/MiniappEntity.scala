@@ -46,7 +46,10 @@ class MiniappEntity extends PersistentEntity {
     * is a function of the current state to a set of actions.
     */
   override def behavior: Behavior = {
-    Actions().onCommand[Upload, UploadMessageDone] {
+    Actions().onReadOnlyCommand[Hello, String] {
+      case (Hello(id), ctx, state) => ctx.reply("Krakatoa!!!")
+
+    }.onCommand[Upload, UploadMessageDone] {
 
       // Command handler for the UseGreetingMessage command
       case (Upload(name, userId, version, tags), ctx, state) =>
