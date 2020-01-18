@@ -49,13 +49,13 @@ trait MiniappService extends Service {
       .withCalls(
         pathCall("/api/hello/:id", hello _),
         //pathCall("/api/hello/:id", useGreeting _)
-        pathCall("/miniapp/upload", upload _),
-        pathCall("/miniapp/edit/:id", edit _),
-        pathCall("/miniapp/uploadNewVersion/:id", uploadNewVersion _),
-        pathCall("/miniapp/review/:id", submitForReview _),
-        pathCall("/miniapp/approve/:id", approve _),
-        pathCall("/miniapp/reject/:id", reject _),
-        pathCall("/miniapp/status/:id", status _)
+        pathCall("/upload", upload _),
+        pathCall("/edit/:id", edit _),
+        pathCall("/uploadNewVersion/:id", uploadNewVersion _),
+        pathCall("/review/:id", submitForReview _),
+        pathCall("/approve/:id", approve _),
+        pathCall("/reject/:id", reject _),
+        pathCall("/status/:id", status _)
       )
       /*
       .withTopics(
