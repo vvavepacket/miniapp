@@ -27,7 +27,7 @@ trait MiniappService extends Service {
 
   def edit(id: String): ServiceCall[EditMessage, Done]
 
-  def uploadNewVersion(id: String): ServiceCall[UploadNewVersionMessage, Done]
+  def uploadNewVersion(id: String): ServiceCall[UploadNewVersionMessage, UploadNewVersionDone]
 
   def submitForReview(id: String): ServiceCall[NotUsed, Done]
 
@@ -73,7 +73,7 @@ trait MiniappService extends Service {
        */
       .withAutoAcl(true)
       .withAcls(
-        ServiceAcl(pathRegex = Some("/miniapp/uploadFile"))
+        ServiceAcl(pathRegex = Some("/uploadFile"))
       )
     // @formatter:on
   }
@@ -97,13 +97,19 @@ object UploadNewVersionMessage {
   implicit val format: Format[UploadNewVersionMessage] = Json.format[UploadNewVersionMessage]
 }
 
-case class UploadMessageDone(id: String)
+case class UploadMessageDone(id: String, versionKey: String)
 
 object UploadMessageDone {
   implicit val format: Format[UploadMessageDone] = Json.format[UploadMessageDone]
 }
 
-case class Miniapp(name: String, userId: String, version: String, tags: List[String], createdTS: Instant, status: String, fileName: String)
+case class UploadNewVersionDone(versionKey: String)
+
+object UploadNewVersionDone {
+  implicit val format: Format[UploadNewVersionDone] = Json.format[UploadNewVersionDone]
+}
+
+case class Miniapp(name: String, userId: String, version: String, tags: List[String], createdTS: Instant, status: String)
 
 object Miniapp {
   implicit val format: Format[Miniapp] = Json.format

@@ -1,9 +1,10 @@
 package com.gxhr.miniapp.impl
 
 import java.time.Instant
+import java.util.UUID
 
 import akka.Done
-import com.gxhr.miniapp.api.UploadMessageDone
+import com.gxhr.miniapp.api.{UploadMessageDone, UploadNewVersionDone}
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag, PersistentEntity}
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
 import com.lightbend.lagom.scaladsl.playjson.{JsonMigration, JsonSerializer, JsonSerializerRegistry}
@@ -39,7 +40,7 @@ class MiniappEntity extends PersistentEntity {
   /**
     * The initial state. This is used if there is no snapshotted state to be found.
     */
-  override def initialState: MiniappState = MiniappState("", "", "0.1.0", List[String](), Instant.now(), "New", "")
+  override def initialState: MiniappState = MiniappState("", "", "0.1.0", "", List[String](), Instant.now(), "New")
 
   /**
     * An entity can define different behaviours for different states, so the behaviour
@@ -53,11 +54,12 @@ class MiniappEntity extends PersistentEntity {
 
       // Command handler for the UseGreetingMessage command
       case (Upload(name, userId, version, tags), ctx, state) =>
+        val versionKey = UUID.randomUUID().toString
         ctx.thenPersist(
-          Uploaded(name, userId, version, tags, Instant.now())
+          Uploaded(name, userId, version, versionKey, tags, Instant.now())
         ) { _ =>
           // Then once the event is successfully persisted, we respond with done.
-          ctx.reply(UploadMessageDone(entityId))
+          ctx.reply(UploadMessageDone(entityId, versionKey))
         }
     }.onCommand[Edit, Done] {
       case (Edit(name, userId, tags), ctx, state) =>
@@ -66,12 +68,21 @@ class MiniappEntity extends PersistentEntity {
         ) { _ =>
           ctx.reply(Done)
         }
-    }.onCommand[UploadNewVersion, Done] {
+    }.onCommand[UploadNewVersion, UploadNewVersionDone] {
       case (UploadNewVersion(userId, name, version, tags), ctx, state) =>
+        // check if user is upload a version that currently exist
+        // change this to option.. bad practice
+        //TODO
+        var versionKey: String = null
+        if (state.version == version) {
+          versionKey = state.versionKey
+        } else {
+          versionKey = UUID.randomUUID().toString
+        }
         ctx.thenPersist(
-          UploadedNewVersion(userId, name, version, tags, Instant.now(), "Uploaded New Version")
+          UploadedNewVersion(userId, name, version, versionKey, tags, Instant.now(), "Uploaded New Version")
         ) { _ =>
-          ctx.reply(Done)
+          ctx.reply(UploadNewVersionDone(versionKey))
         }
     }.onCommand[SubmitForReview, Done] {
       case (SubmitForReview(id), ctx, state) =>
@@ -95,9 +106,9 @@ class MiniappEntity extends PersistentEntity {
           ctx.reply(Done)
         }
     }.onCommand[UploadMiniappFile, Done] {
-      case (UploadMiniappFile(fileName), ctx, state) =>
+      case (UploadMiniappFile(id), ctx, state) =>
         ctx.thenPersist(
-          UploadedMiniappFile(fileName)
+          UploadedMiniappFile(Instant.now())
         ) { _ =>
           ctx.reply(Done)
         }
@@ -110,20 +121,20 @@ class MiniappEntity extends PersistentEntity {
 
     }.onEvent {
       // Event handler for the GreetingMessageChanged event
-      case (Uploaded(name, userId, version, tags, createdTS), state) =>
-        state.copy(name, userId, version, tags, createdTS)
+      case (Uploaded(name, userId, version, versionKey, tags, createdTS), state) =>
+        state.copy(name = name, userId = userId, version = version, versionKey = versionKey, tags = tags, createdTS = createdTS)
       case (Edited(name, userId, tags, _), state) =>
         state.copy(name = name, userId = userId, tags = tags)
-      case (UploadedNewVersion(userId, name, version, tags, _, status), state) =>
-        state.copy(userId = userId, name = name, version = version, tags = tags, status = status)
+      case (UploadedNewVersion(userId, name, version, versionKey, tags, _, status), state) =>
+        state.copy(userId = userId, name = name, version = version, versionKey = versionKey, tags = tags, status = status)
       case (SubmittedForReview(_), state) =>
         state.copy(status = "submitted")
       case (Approved(_), state) =>
         state.copy(status = "approved")
       case (Rejected(_), state) =>
         state.copy(status = "rejected")
-      case (UploadedMiniappFile(fileName), state) =>
-        state.copy(fileName = fileName)
+      case (UploadedMiniappFile(_), state) =>
+        state.copy(status = "uploaded mini app to s3")
     }
   }
 }
@@ -135,10 +146,10 @@ case class MiniappState(
                          name: String,
                          userId: String,
                          version: String,
+                         versionKey: String,
                          tags: List[String],
                          createdTS: Instant,
-                         status: String,
-                         fileName: String
+                         status: String
                        )
 
 object MiniappState {
@@ -166,7 +177,7 @@ object MiniappEvent {
 }
 
 //event
-case class Uploaded(name: String, userId: String, version: String, tags: List[String], createdTS: Instant) extends MiniappEvent
+case class Uploaded(name: String, userId: String, version: String, versionKey: String, tags: List[String], createdTS: Instant) extends MiniappEvent
 
 object Uploaded {
   implicit val format: Format[Uploaded] = Json.format
@@ -178,7 +189,7 @@ object Edited {
   implicit val format: Format[Edited] = Json.format
 }
 
-case class UploadedNewVersion(userId: String, name: String, version: String, tags: List[String], eventTime: Instant, status: String) extends MiniappEvent
+case class UploadedNewVersion(userId: String, name: String, version: String, versionKey: String, tags: List[String], eventTime: Instant, status: String) extends MiniappEvent
 
 object UploadedNewVersion {
   implicit val format: Format[UploadedNewVersion] = Json.format
@@ -202,7 +213,7 @@ object Rejected {
   implicit val format: Format[Rejected] = Json.format
 }
 
-case class UploadedMiniappFile(fileName: String) extends MiniappEvent
+case class UploadedMiniappFile(eventTime: Instant) extends MiniappEvent
 
 object UploadedMiniappFile {
   implicit val format: Format[UploadedMiniappFile] = Json.format
@@ -242,7 +253,7 @@ object Edit {
   implicit val format: Format[Edit] = Json.format
 }
 
-case class UploadNewVersion(userId: String, name: String, version: String, tags: List[String]) extends MiniappCommand[Done]
+case class UploadNewVersion(userId: String, name: String, version: String, tags: List[String]) extends MiniappCommand[UploadNewVersionDone]
 
 object UploadNewVersion {
   implicit val format: Format[UploadNewVersion] = Json.format
@@ -272,7 +283,7 @@ object Status {
   implicit val format: Format[Status] = Json.format
 }
 
-case class UploadMiniappFile(fileName: String) extends MiniappCommand[Done]
+case class UploadMiniappFile(id: String) extends MiniappCommand[Done]
 
 object UploadMiniappFile {
   implicit val format: Format[UploadMiniappFile] = Json.format
@@ -345,6 +356,7 @@ object MiniappSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[MiniappException],
     // response
     JsonSerializer[UploadMessageDone],
+    JsonSerializer[UploadNewVersionDone],
     // command
     JsonSerializer[Upload],
     JsonSerializer[Edit],

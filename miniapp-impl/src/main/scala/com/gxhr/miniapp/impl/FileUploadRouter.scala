@@ -15,10 +15,16 @@ import play.api.routing.sird._
 import play.core.parsers.Multipart.{FileInfo, FilePartHandler}
 import java.io.File
 import java.util.UUID
+import java.util.zip.ZipInputStream
 
 import akka.stream.scaladsl.{FileIO, Sink}
 import akka.stream.{IOResult, Materializer}
 import akka.util.ByteString
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.regions.Regions
+import com.amazonaws.services.s3.model.{BucketWebsiteConfiguration, PutObjectRequest}
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.amazonaws.{AmazonServiceException, SdkClientException}
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntityRegistry
 import play.api.Logger
 import play.api.libs.streams.Accumulator
@@ -56,15 +62,124 @@ class FileUploadRouter(action: DefaultActionBuilder,
   }
 
   val router = Router.from {
-    case POST(p"/miniapp/uploadFile") =>
+    case POST(p"/uploadFile") =>
       action(parser.multipartFormData(fileHandler)) { request =>
-        val files = request.body.files.map(_.ref.getAbsolutePath)
-        val id = request.body.dataParts.get("id");
-        val q = files(0).split("/")
-        val fileUUID = q(q.length-1)
+        //val files = request.body.files.map(_.ref.getAbsolutePath)
+        val id = request.body.dataParts.get("miniapp_id").get.mkString;
+        val versionKey = request.body.dataParts.get("versionKey").get.mkString
+        val dist = request.body.files.filter(_.key == "dist").head.ref.getAbsolutePath
+        val sourceCode = request.body.files.filter(_.key == "sourceCode").head.ref.getAbsolutePath
+        miniappWebsiteBucketName = id + domainName
+        // upload to s3
+        uploadToS3(miniappZipBucketName, id + File.separator + versionKey + File.separator + "dist.zip", dist)
+        uploadToS3(miniappZipBucketName, id + File.separator + versionKey + File.separator + "sourceCode.zip", sourceCode)
+
+        // deployToS3
+        deployToS3(id, dist)
+
         // send command uploadfile
-        persistentEntityRegistry.refFor[MiniappEntity](id.get(0)).ask(UploadMiniappFile(fileUUID))
-        Results.Ok(files.mkString("Uploaded[", ", ", "]"))
+        persistentEntityRegistry.refFor[MiniappEntity](id).ask(UploadMiniappFile(id))
+        Results.Ok("Uploaded")
       }
+  }
+
+  val clientRegion = Regions.AP_SOUTHEAST_1
+  val miniappZipBucketName = "test-goxhere-miniapp"
+  val accessKey = "AKIAXNR6UL6JA3H4XCWY"
+  val secretKey = "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"
+  val domainName = ".miniapp.test.goxhere.com"
+  var miniappWebsiteBucketName = ""
+
+  private def uploadToS3(bucketName: String, objectName: String, path: String) = {
+    try {
+      val awsCreds = new BasicAWSCredentials(accessKey, secretKey)
+      val s3Client: AmazonS3  = AmazonS3ClientBuilder.standard()
+        .withRegion(clientRegion)
+        .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+        .build();
+
+      val request = new PutObjectRequest(bucketName, objectName , new File(path))
+      s3Client.putObject(request)
+
+    } catch {
+      case x: AmazonServiceException => {
+        x.printStackTrace()
+      }
+      case x: SdkClientException => {
+        x.printStackTrace()
+      }
+    }
+  }
+
+  private def deployToS3(id: String, zipFile: String) = {
+    try {
+      val awsCreds = new BasicAWSCredentials(accessKey, secretKey)
+      val s3Client: AmazonS3  = AmazonS3ClientBuilder.standard()
+        .withRegion(clientRegion)
+        .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
+        .build();
+
+      val newBucketName: String = id + domainName
+      // check if bucket does not exist.. if does not, create it
+      if (!s3Client.doesBucketExistV2(newBucketName)) {
+        import com.amazonaws.services.s3.model.CreateBucketRequest
+        s3Client.createBucket(new CreateBucketRequest(newBucketName))
+        s3Client.setBucketWebsiteConfiguration(newBucketName, new BucketWebsiteConfiguration("index.html"))
+        s3Client.setBucketPolicy(newBucketName, "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n            \"Sid\": \"PublicReadGetObject\",\n            \"Effect\": \"Allow\",\n            \"Principal\": \"*\",\n            \"Action\": \"s3:GetObject\",\n            \"Resource\": \"arn:aws:s3:::"+newBucketName+"/*\"\n        }\n    ]\n}")
+      }
+
+      // unzip the file temporarily and upload them
+      unzip(zipFile, "./target/file-upload-data/uploads/" + UUID.randomUUID().toString)
+
+
+    } catch {
+      case x: AmazonServiceException => {
+        x.printStackTrace()
+      }
+      case x: SdkClientException => {
+        x.printStackTrace()
+      }
+    }
+  }
+
+  private def unzip(zipFilePath: String, destDirectory: String): Unit = {
+    import java.io.FileInputStream
+    import java.util.zip.ZipEntry
+    import java.util.zip.ZipInputStream
+    val destDir = new File(destDirectory)
+    if (!destDir.exists) destDir.mkdir
+    val zipIn = new ZipInputStream(new FileInputStream(zipFilePath))
+    var entry = zipIn.getNextEntry
+    // iterates over entries in the zip file
+    while ( {
+      entry != null
+    }) {
+      val filePath = destDirectory + File.separator + entry.getName
+      if (!entry.isDirectory) { // if the entry is a file, extracts it
+        extractFile(zipIn, filePath)
+        // upload to s3
+        uploadToS3(miniappWebsiteBucketName, entry.getName, filePath)
+      }
+      else { // if the entry is a directory, make the directory
+        val dir = new File(filePath)
+        dir.mkdir
+      }
+      zipIn.closeEntry()
+      entry = zipIn.getNextEntry
+    }
+  }
+
+  private def extractFile(zipIn: ZipInputStream , filePath: String): Unit = {
+    import java.io.BufferedOutputStream
+    import java.io.FileOutputStream
+    val bos = new BufferedOutputStream(new FileOutputStream(filePath))
+    val bytesIn = new Array[Byte](4096)
+    var read = 0
+    read = zipIn.read(bytesIn)
+    while (read != -1) {
+      bos.write(bytesIn, 0, read)
+      read = zipIn.read(bytesIn)
+    }
+    bos.close
   }
 }
