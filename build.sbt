@@ -8,6 +8,7 @@ val macwire = "com.softwaremill.macwire" %% "macros" % "2.3.0" % "provided"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.0.4" % Test
 val akkaDiscoveryKubernetesApi = "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % "1.0.0"
 val awsS3 = "com.amazonaws" % "aws-java-sdk-s3" % "1.11.710"
+val postgresDriver = "org.postgresql" % "postgresql" % "42.2.9"
 
 lazy val `miniapp` = (project in file("."))
   .aggregate(`miniapp-api`, `miniapp-impl`, `miniapp-stream-api`, `miniapp-stream-impl`)
@@ -23,6 +24,7 @@ lazy val `miniapp-impl` = (project in file("miniapp-impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= Seq(
+      lagomScaladslPersistenceJdbc,
       lagomScaladslPersistenceCassandra,
       lagomScaladslKafkaBroker,
       lagomScaladslTestKit,
@@ -30,7 +32,8 @@ lazy val `miniapp-impl` = (project in file("miniapp-impl"))
       scalaTest,
       lagomScaladslAkkaDiscovery,
       akkaDiscoveryKubernetesApi,
-      awsS3
+      awsS3,
+      postgresDriver
     )
   )
   .settings(lagomForkedTestSettings)

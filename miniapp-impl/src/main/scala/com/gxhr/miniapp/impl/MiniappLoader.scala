@@ -2,7 +2,7 @@ package com.gxhr.miniapp.impl
 
 import com.lightbend.lagom.scaladsl.api.ServiceLocator
 import com.lightbend.lagom.scaladsl.api.ServiceLocator.NoServiceLocator
-import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
+import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraPersistenceComponents, WriteSideCassandraPersistenceComponents}
 import com.lightbend.lagom.scaladsl.server._
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import play.api.libs.ws.ahc.AhcWSComponents
@@ -12,6 +12,9 @@ import com.lightbend.lagom.scaladsl.playjson.{JsonSerializer, JsonSerializerRegi
 import com.softwaremill.macwire._
 import com.lightbend.lagom.scaladsl.akka.discovery.AkkaDiscoveryComponents
 import com.lightbend.lagom.scaladsl.client.ConfigurationServiceLocatorComponents
+import com.lightbend.lagom.scaladsl.persistence.jdbc.{JdbcPersistenceComponents, ReadSideJdbcPersistenceComponents}
+import com.lightbend.lagom.scaladsl.persistence.slick.{ReadSideSlickPersistenceComponents, SlickPersistenceComponents}
+import play.api.db.HikariCPComponents
 
 class MiniappLoader extends LagomApplicationLoader {
 
@@ -27,8 +30,16 @@ class MiniappLoader extends LagomApplicationLoader {
 
 abstract class MiniappApplication(context: LagomApplicationContext)
   extends LagomApplication(context)
-    with CassandraPersistenceComponents
+    //with JdbcPersistenceComponents
+    //with ReadSideJdbcPersistenceComponents
+    with ReadSideSlickPersistenceComponents
+    with WriteSideCassandraPersistenceComponents
+    //with SlickPersistenceComponents
+    //with CassandraPersistenceComponents
+    //with WriteSideCassandraPersistenceComponents
+    //with SlickPersistenceComponents
     with LagomKafkaComponents
+    with HikariCPComponents
     with AhcWSComponents {
 
   // Bind the service that this server provides
@@ -41,4 +52,10 @@ abstract class MiniappApplication(context: LagomApplicationContext)
 
   // Register the miniapp persistent entity
   persistentEntityRegistry.register(wire[MiniappEntity])
+
+  lazy val miniappSummaryRepo: MiniappSummaryRepository =
+    wire[MiniappSummaryRepository]
+  readSide.register(wire[MiniappSummaryProcessor])
+
+
 }

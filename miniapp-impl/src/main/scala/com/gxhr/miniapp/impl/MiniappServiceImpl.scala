@@ -4,20 +4,28 @@ import java.util.UUID
 
 import akka.{Done, NotUsed}
 import com.gxhr.miniapp.api
-import com.gxhr.miniapp.api.{Miniapp, MiniappService, UploadNewVersionMessage}
+import com.gxhr.miniapp.api.{Miniapp, MiniappService, MiniappSummary, UploadNewVersionMessage}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
-import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry}
-import scala.concurrent.ExecutionContext.Implicits.global
+import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry, ReadSide}
+import com.softwaremill.macwire.wire
+import slick.jdbc.JdbcBackend.Database
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Implementation of the MiniappService.
   */
-class MiniappServiceImpl(persistentEntityRegistry: PersistentEntityRegistry) extends MiniappService {
+class MiniappServiceImpl(
+                          persistentEntityRegistry: PersistentEntityRegistry,
+                          val miniappSummaryRepo: MiniappSummaryRepository
+                        )(implicit ec: ExecutionContext) extends MiniappService {
+  //readSide.register[MiniappEvent](new MiniappSummaryProcessor(db))
 
   private def entityRef(id: String) =
     persistentEntityRegistry.refFor[MiniappEntity](id)
+    //clusterSharding.entityRefFor(MiniappEntity.typeKey, id)
 
   override def upload() = ServiceCall { request =>
     // generate uuid
@@ -61,6 +69,10 @@ class MiniappServiceImpl(persistentEntityRegistry: PersistentEntityRegistry) ext
     // Look up the Hello World entity for the given ID.
     entityRef(id)
       .ask(Hello(id))
+  }
+
+  override def getSummary() = ServiceCall { _ =>
+    miniappSummaryRepo.selectMiniappSummaries()
   }
   /*
       override def useGreeting(id: String) = ServiceCall { request =>

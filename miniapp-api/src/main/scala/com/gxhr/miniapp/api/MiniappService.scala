@@ -37,6 +37,8 @@ trait MiniappService extends Service {
 
   def status(id: String): ServiceCall[NotUsed, Miniapp]
 
+  def getSummary(): ServiceCall[NotUsed, Seq[MiniappSummary]]
+
   /**
     * This gets published to Kafka.
     */
@@ -55,7 +57,8 @@ trait MiniappService extends Service {
         pathCall("/review/:id", submitForReview _),
         pathCall("/approve/:id", approve _),
         pathCall("/reject/:id", reject _),
-        pathCall("/status/:id", status _)
+        pathCall("/status/:id", status _),
+        pathCall("/summary", getSummary _)
       )
       /*
       .withTopics(
@@ -113,4 +116,10 @@ case class Miniapp(name: String, userId: String, version: String, tags: List[Str
 
 object Miniapp {
   implicit val format: Format[Miniapp] = Json.format
+}
+
+final case class MiniappSummary(id: String, name: String, description: String)
+
+object MiniappSummary {
+  implicit val format: Format[MiniappSummary] = Json.format
 }

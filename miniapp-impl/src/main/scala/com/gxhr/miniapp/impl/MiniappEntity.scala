@@ -168,12 +168,25 @@ object MiniappState {
 /**
   * This interface defines all the events that the MiniappEntity supports.
   */
+/*
 sealed trait MiniappEvent extends AggregateEvent[MiniappEvent] {
-  def aggregateTag: AggregateEventTag[MiniappEvent] = MiniappEvent.Tag
+  def aggregateTag: AggregateEventTagger[MiniappEvent] = MiniappEvent.Tag
 }
 
 object MiniappEvent {
   val Tag: AggregateEventTag[MiniappEvent] = AggregateEventTag[MiniappEvent]
+}
+
+ */
+
+sealed trait MiniappEvent extends AggregateEvent[MiniappEvent] {
+  //override def aggregateTag: AggregateEventTagger[MiniappEvent] = MiniappEvent.Tag
+  def aggregateTag = MiniappEvent.Tag
+}
+
+object MiniappEvent {
+  //val Tag: AggregateEventShards[MiniappEvent] = AggregateEventTag.sharded[MiniappEvent](numShards = 1)
+  val Tag = AggregateEventTag.sharded[MiniappEvent](1)
 }
 
 //event
