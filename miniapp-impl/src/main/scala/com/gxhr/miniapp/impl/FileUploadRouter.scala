@@ -120,12 +120,33 @@ class FileUploadRouter(action: DefaultActionBuilder,
         .build();
 
       val newBucketName: String = id + domainName
+
       // check if bucket does not exist.. if does not, create it
       if (!s3Client.doesBucketExistV2(newBucketName)) {
         import com.amazonaws.services.s3.model.CreateBucketRequest
         s3Client.createBucket(new CreateBucketRequest(newBucketName))
         s3Client.setBucketWebsiteConfiguration(newBucketName, new BucketWebsiteConfiguration("index.html"))
         s3Client.setBucketPolicy(newBucketName, "{\n    \"Version\": \"2012-10-17\",\n    \"Statement\": [\n        {\n            \"Sid\": \"PublicReadGetObject\",\n            \"Effect\": \"Allow\",\n            \"Principal\": \"*\",\n            \"Action\": \"s3:GetObject\",\n            \"Resource\": \"arn:aws:s3:::"+newBucketName+"/*\"\n        }\n    ]\n}")
+      }
+      // check if bucket exists, if it exists, empty it...
+      else {
+        var objectListing = s3Client.listObjects(newBucketName)
+        import scala.util.control.Breaks._
+        breakable {
+          val objIter = objectListing.getObjectSummaries.iterator
+          while (objIter.hasNext()) {
+            s3Client.deleteObject(newBucketName, objIter.next.getKey)
+          }
+          // If the bucket contains many objects, the listObjects() call
+          // might not return all of the objects in the first listing. Check to
+          // see whether the listing was truncated. If so, retrieve the next page of objects
+          // and delete them.
+          if (objectListing.isTruncated()) {
+            objectListing = s3Client.listNextBatchOfObjects(objectListing)
+          } else {
+            break
+          }
+        }
       }
 
       // unzip the file temporarily and upload them

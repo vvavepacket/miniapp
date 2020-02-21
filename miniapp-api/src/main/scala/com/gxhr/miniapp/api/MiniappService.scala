@@ -82,7 +82,7 @@ trait MiniappService extends Service {
   }
 }
 
-case class UploadMessage(userId: String, name: String, version: String, tags: List[String])
+case class UploadMessage(userId: String, name: String, version: String, tags: List[String], icon: String)
 
 object UploadMessage {
   implicit val format: Format[UploadMessage] = Json.format[UploadMessage]
@@ -94,7 +94,7 @@ object EditMessage {
   implicit val format: Format[EditMessage] = Json.format[EditMessage]
 }
 
-case class UploadNewVersionMessage(userId: String, name: String, version: String, tags: List[String])
+case class UploadNewVersionMessage(userId: String, name: String, version: String, tags: List[String], icon: String)
 
 object UploadNewVersionMessage {
   implicit val format: Format[UploadNewVersionMessage] = Json.format[UploadNewVersionMessage]
@@ -112,13 +112,13 @@ object UploadNewVersionDone {
   implicit val format: Format[UploadNewVersionDone] = Json.format[UploadNewVersionDone]
 }
 
-case class Miniapp(name: String, userId: String, version: String, tags: List[String], createdTS: Instant, status: String)
+case class Miniapp(name: String, userId: String, version: String, tags: List[String], createdTS: Instant, status: String, icon: String)
 
 object Miniapp {
   implicit val format: Format[Miniapp] = Json.format
 }
 
-final case class MiniappSummary(id: String, name: String, description: String)
+final case class MiniappSummary(id: String, name: String, description: String, icon: String)
 
 object MiniappSummary {
   implicit val format: Format[MiniappSummary] = Json.format

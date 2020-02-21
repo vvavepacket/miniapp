@@ -40,7 +40,7 @@ class MiniappEntity extends PersistentEntity {
   /**
     * The initial state. This is used if there is no snapshotted state to be found.
     */
-  override def initialState: MiniappState = MiniappState("", "", "0.1.0", "", List[String](), Instant.now(), "New")
+  override def initialState: MiniappState = MiniappState("", "", "0.1.0", "", List[String](), Instant.now(), "New", "")
 
   /**
     * An entity can define different behaviours for different states, so the behaviour
@@ -53,10 +53,10 @@ class MiniappEntity extends PersistentEntity {
     }.onCommand[Upload, UploadMessageDone] {
 
       // Command handler for the UseGreetingMessage command
-      case (Upload(name, userId, version, tags), ctx, state) =>
+      case (Upload(name, userId, version, tags, icon), ctx, state) =>
         val versionKey = UUID.randomUUID().toString
         ctx.thenPersist(
-          Uploaded(name, userId, version, versionKey, tags, Instant.now())
+          Uploaded(name, userId, version, versionKey, tags, Instant.now(), icon)
         ) { _ =>
           // Then once the event is successfully persisted, we respond with done.
           ctx.reply(UploadMessageDone(entityId, versionKey))
@@ -69,7 +69,7 @@ class MiniappEntity extends PersistentEntity {
           ctx.reply(Done)
         }
     }.onCommand[UploadNewVersion, UploadNewVersionDone] {
-      case (UploadNewVersion(userId, name, version, tags), ctx, state) =>
+      case (UploadNewVersion(userId, name, version, tags, icon), ctx, state) =>
         // check if user is upload a version that currently exist
         // change this to option.. bad practice
         //TODO
@@ -80,7 +80,7 @@ class MiniappEntity extends PersistentEntity {
           versionKey = UUID.randomUUID().toString
         }
         ctx.thenPersist(
-          UploadedNewVersion(userId, name, version, versionKey, tags, Instant.now(), "Uploaded New Version")
+          UploadedNewVersion(userId, name, version, versionKey, tags, Instant.now(), "Uploaded New Version", icon)
         ) { _ =>
           ctx.reply(UploadNewVersionDone(versionKey))
         }
@@ -121,12 +121,12 @@ class MiniappEntity extends PersistentEntity {
 
     }.onEvent {
       // Event handler for the GreetingMessageChanged event
-      case (Uploaded(name, userId, version, versionKey, tags, createdTS), state) =>
-        state.copy(name = name, userId = userId, version = version, versionKey = versionKey, tags = tags, createdTS = createdTS)
+      case (Uploaded(name, userId, version, versionKey, tags, createdTS, icon), state) =>
+        state.copy(name = name, userId = userId, version = version, versionKey = versionKey, tags = tags, createdTS = createdTS, icon = icon)
       case (Edited(name, userId, tags, _), state) =>
         state.copy(name = name, userId = userId, tags = tags)
-      case (UploadedNewVersion(userId, name, version, versionKey, tags, _, status), state) =>
-        state.copy(userId = userId, name = name, version = version, versionKey = versionKey, tags = tags, status = status)
+      case (UploadedNewVersion(userId, name, version, versionKey, tags, _, status, icon), state) =>
+        state.copy(userId = userId, name = name, version = version, versionKey = versionKey, tags = tags, status = status, icon = icon)
       case (SubmittedForReview(_), state) =>
         state.copy(status = "submitted")
       case (Approved(_), state) =>
@@ -149,7 +149,8 @@ case class MiniappState(
                          versionKey: String,
                          tags: List[String],
                          createdTS: Instant,
-                         status: String
+                         status: String,
+                         icon: String
                        )
 
 object MiniappState {
@@ -190,7 +191,7 @@ object MiniappEvent {
 }
 
 //event
-case class Uploaded(name: String, userId: String, version: String, versionKey: String, tags: List[String], createdTS: Instant) extends MiniappEvent
+case class Uploaded(name: String, userId: String, version: String, versionKey: String, tags: List[String], createdTS: Instant, icon: String) extends MiniappEvent
 
 object Uploaded {
   implicit val format: Format[Uploaded] = Json.format
@@ -202,7 +203,7 @@ object Edited {
   implicit val format: Format[Edited] = Json.format
 }
 
-case class UploadedNewVersion(userId: String, name: String, version: String, versionKey: String, tags: List[String], eventTime: Instant, status: String) extends MiniappEvent
+case class UploadedNewVersion(userId: String, name: String, version: String, versionKey: String, tags: List[String], eventTime: Instant, status: String, icon: String) extends MiniappEvent
 
 object UploadedNewVersion {
   implicit val format: Format[UploadedNewVersion] = Json.format
@@ -254,7 +255,7 @@ object GreetingMessageChanged {
 sealed trait MiniappCommand[R] extends ReplyType[R]
 
 // commands
-case class Upload(name: String, userId: String, version: String, tags: List[String]) extends MiniappCommand[UploadMessageDone]
+case class Upload(name: String, userId: String, version: String, tags: List[String], icon: String) extends MiniappCommand[UploadMessageDone]
 
 object Upload {
   implicit val format: Format[Upload] = Json.format
@@ -266,7 +267,7 @@ object Edit {
   implicit val format: Format[Edit] = Json.format
 }
 
-case class UploadNewVersion(userId: String, name: String, version: String, tags: List[String]) extends MiniappCommand[UploadNewVersionDone]
+case class UploadNewVersion(userId: String, name: String, version: String, tags: List[String], icon: String) extends MiniappCommand[UploadNewVersionDone]
 
 object UploadNewVersion {
   implicit val format: Format[UploadNewVersion] = Json.format
@@ -406,5 +407,20 @@ object MiniappSerializerRegistry extends JsonSerializerRegistry {
     classOf[UploadedNewVersion].getName -> test1AddedMigration
   )
    */
+
+  private val test1AddedMigration = new JsonMigration(2) {
+    override def transform(fromVersion: Int, json: JsObject): JsObject = {
+      if (fromVersion < 2) {
+        json + ("icon" -> JsString("https://i.imgur.com/D1zkDUU.png"))
+      } else {
+        json
+      }
+    }
+  }
+
+  override def migrations = Map[String, JsonMigration](
+    classOf[Uploaded].getName -> test1AddedMigration,
+    classOf[UploadedNewVersion].getName -> test1AddedMigration
+  )
 
 }

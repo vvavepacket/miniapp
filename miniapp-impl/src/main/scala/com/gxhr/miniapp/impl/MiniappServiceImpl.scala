@@ -31,7 +31,7 @@ class MiniappServiceImpl(
     // generate uuid
     val id = UUID.randomUUID().toString
     entityRef(id)
-      .ask(Upload(request.name, request.userId, request.version, request.tags))
+      .ask(Upload(request.name, request.userId, request.version, request.tags, request.icon))
   }
 
   override def edit(id: String) = ServiceCall { request =>
@@ -42,12 +42,12 @@ class MiniappServiceImpl(
   override def status(id: String) = ServiceCall { _ =>
     entityRef(id)
       .ask(Status(id))
-      .map(state => Miniapp(state.name, state.userId, state.version, state.tags, state.createdTS, state.status))
+      .map(state => Miniapp(state.name, state.userId, state.version, state.tags, state.createdTS, state.status, state.icon))
   }
 
   override def uploadNewVersion(id: String) = ServiceCall { request =>
     entityRef(id)
-      .ask(UploadNewVersion(request.userId, request.name, request.version, request.tags))
+      .ask(UploadNewVersion(request.userId, request.name, request.version, request.tags, request.icon))
   }
 
   override def reject(id: String) = ServiceCall { request =>

@@ -14,6 +14,10 @@ class MiniappSummaryProcessor(
       .setEventHandler[Uploaded] { envelope =>
         miniappSummaryRepo.addMiniapp(envelope.entityId, envelope.event)
       }
+      .setEventHandler[UploadedNewVersion] { envelope =>
+        miniappSummaryRepo.uploadedNewVersion(envelope.entityId, envelope.event)
+
+      }
       .build()
   }
 

@@ -12,7 +12,8 @@ class MiniappSummaryRepository(db: Database) {
     def id = column[String]("id", O.PrimaryKey)
     def name = column[String]("name")
     def description = column[String]("description")
-    def * = (id, name, description) <> ((MiniappSummary.apply _).tupled, MiniappSummary.unapply)
+    def icon = column[String]("icon")
+    def * = (id, name, description, icon) <> ((MiniappSummary.apply _).tupled, MiniappSummary.unapply)
   }
 
   val miniappSummaries = TableQuery[MiniappSummaryTable]
@@ -24,7 +25,7 @@ class MiniappSummaryRepository(db: Database) {
   def createTable = miniappSummaries.schema.createIfNotExists
 
   def addMiniapp(id: String, event: Uploaded): DBIO[Done] = {
-    (miniappSummaries += MiniappSummary(id, event.name, "")).map(_ => Done)
+    (miniappSummaries += MiniappSummary(id, event.name, "", event.icon)).map(_ => Done)
     /*
     findByIdQuery(id)
       .flatMap {
@@ -35,6 +36,10 @@ class MiniappSummaryRepository(db: Database) {
       .transactionally
 
      */
+  }
+
+  def uploadedNewVersion(id: String, event: UploadedNewVersion): DBIO[Done] = {
+    miniappSummaries.insertOrUpdate(MiniappSummary(id, event.name, "", event.icon)).map(_ => Done)
   }
 
   private def findByIdQuery(id: String): DBIO[Option[MiniappSummary]] = {
