@@ -11,7 +11,7 @@ import play.api.libs.json.{Format, Json}
 object MiniappService  {
   val TOPIC_NAME = "greetings"
 }
-
+//added something. comment must be deleted
 /**
   * The miniapp service interface.
   * <p>
