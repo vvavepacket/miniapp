@@ -91,19 +91,15 @@ spec:
 
     stage('Prod Approval') {
       steps {
-        input message: "Deploy to Prod?"
+        timeout(time: 1, unit: “HOURS”) {
+          input message: "Deploy to Prod?"
+        }
       }
     }
 
     stage('Deploy Prod') {
       steps {
         container('tools') {
-          sshagent (credentials: ['61952383-2418-46b9-a4da-47f6ae109fc9']) {
-            sh "ssh -o StrictHostKeyChecking=no git@bitbucket.org"
-            sh "git clone git@bitbucket.org:goxhere/miniapp-deploy.git"
-            sh "git config --global user.email 'ci@goxhere.com'"
-            sh "git config --global user.name 'jenkins'"
-          }
           sh "cd ./miniapp-deploy/prod/miniapp && kustomize edit set image 510158725010.dkr.ecr.us-east-1.amazonaws.com/goxhere/miniapp:${env.GIT_COMMIT}"
           sshagent (credentials: ['61952383-2418-46b9-a4da-47f6ae109fc9']) {
             sh "cd ./miniapp-deploy && git commit -am 'Publish new version in Prod' && git push || echo 'no changes'"
