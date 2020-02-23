@@ -93,7 +93,7 @@ spec:
         input "Deploy to prod?"
     }
 
-    stage('Deploy Test') {
+    stage('Deploy Prod') {
       steps {
         container('tools') {
           sshagent (credentials: ['61952383-2418-46b9-a4da-47f6ae109fc9']) {
