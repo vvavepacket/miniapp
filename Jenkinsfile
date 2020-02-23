@@ -90,9 +90,7 @@ spec:
     }
 
     stage('Prod Approval'){
-        steps {
-            input message 'Deploy to Prod?'
-        }
+      input message 'Deploy to Prod?'
     }
 
     stage('Deploy Prod') {
