@@ -92,7 +92,7 @@ spec:
     stage('Prod Approval'){
         steps {
             input {
-                    message "Deploy to Prod?"
+                message "Deploy to Prod?"
             }
         }
     }
