@@ -90,7 +90,11 @@ spec:
     }
 
     stage('Prod Approval'){
-      input message 'Deploy to Prod?'
+        steps {
+            timeout(time: 1, unit: “HOURS”) {
+                input message 'Deploy to Prod?'
+            }
+        }
     }
 
     stage('Deploy Prod') {
