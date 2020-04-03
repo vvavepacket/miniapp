@@ -46,11 +46,8 @@ class FileUploadRouter(action: DefaultActionBuilder,
     case FileInfo(partName, filename, contentType, _) =>
       val tempFile = {
         println(persistentEntityRegistry)
-        // check if folder exists
-        val destDir = new File("/tmp/miniapp-uploads")
-        if (!destDir.exists) destDir.mkdir
         // create a temp file in the `target` folder
-        val f = new java.io.File("/tmp/miniapp-uploads/uploads", UUID.randomUUID().toString).getAbsoluteFile
+        val f = new java.io.File("/tmp/miniapp-uploads", UUID.randomUUID().toString).getAbsoluteFile
         // make sure the sub-folders inside `target` exist.
         f.getParentFile.mkdirs()
         //println(f.getAbsolutePath)
