@@ -171,7 +171,7 @@ class FileUploadRouter(action: DefaultActionBuilder,
     if (!destDir.exists) destDir.mkdir
     val zipIn = new ZipInputStream(new FileInputStream(zipFilePath))
     var entry = zipIn.getNextEntry
-    // iterates over entries in the zip file
+    // iterates over entries in the zip file...
     while ( {
       entry != null
     }) {
