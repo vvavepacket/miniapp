@@ -177,6 +177,8 @@ class FileUploadRouter(action: DefaultActionBuilder,
     }) {
       val filePath = destDirectory + File.separator + entry.getName
       if (!entry.isDirectory) { // if the entry is a file, extracts it
+        println("entry: "+entry.getName)
+        println("filePath: "+filePath)
         extractFile(zipIn, filePath)
         // upload to s3
         uploadToS3(miniappWebsiteBucketName, entry.getName, filePath)
