@@ -150,7 +150,7 @@ class FileUploadRouter(action: DefaultActionBuilder,
       }
 
       // unzip the file temporarily and upload them
-      unzip(zipFile, "./target/file-upload-data/uploads/" + UUID.randomUUID().toString)
+      unzip(zipFile, "/tmp/miniapp-uploads/" + UUID.randomUUID().toString)
 
 
     } catch {
