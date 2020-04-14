@@ -39,6 +39,10 @@ trait MiniappService extends Service {
 
   def getSummary(): ServiceCall[NotUsed, Seq[MiniappSummary]]
 
+  // out of band
+
+  def addPlaceToMiniapp(): ServiceCall[AddPlaceToMiniapp, Done]
+
   /**
     * This gets published to Kafka.
     */
@@ -58,7 +62,8 @@ trait MiniappService extends Service {
         pathCall("/approve/:id", approve _),
         pathCall("/reject/:id", reject _),
         pathCall("/status/:id", status _),
-        pathCall("/summary", getSummary _)
+        pathCall("/summary", getSummary _),
+        pathCall("/addPlaceToMiniapp", addPlaceToMiniapp _)
       )
       /*
       .withTopics(
@@ -122,4 +127,16 @@ final case class MiniappSummary(id: String, name: String, description: String, i
 
 object MiniappSummary {
   implicit val format: Format[MiniappSummary] = Json.format
+}
+
+case class AddPlaceToMiniapp(miniappId: String, placeId: String)
+
+object AddPlaceToMiniapp {
+  implicit val format: Format[AddPlaceToMiniapp] = Json.format[AddPlaceToMiniapp]
+}
+
+final case class MiniappPlace(miniappId: String, placeId: String)
+
+object MiniappPlace {
+  implicit val format: Format[MiniappPlace] = Json.format
 }

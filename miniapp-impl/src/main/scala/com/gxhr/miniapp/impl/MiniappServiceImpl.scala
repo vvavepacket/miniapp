@@ -98,4 +98,9 @@ class MiniappServiceImpl(
     }
   }
   */
+  override def addPlaceToMiniapp() = ServiceCall { request =>
+    val miniappId = UUID.randomUUID().toString
+    entityRef(miniappId)
+      .ask(AddPlaceToMiniapp(request.miniappId, request.placeId))
+  }
 }
