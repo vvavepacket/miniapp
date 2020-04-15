@@ -10,7 +10,7 @@ class MiniappPlaceProcessor(
   override def buildHandler(): ReadSideProcessor.ReadSideHandler[MiniappEvent] = {
     readSide
       .builder[MiniappEvent]("miniapp-place")
-      .setGlobalPrepare(miniappPlaceRepo.createTable)
+      //.setGlobalPrepare(miniappPlaceRepo.createTable)
       .setEventHandler[AddedPlaceToMiniapp] { envelope =>
         miniappPlaceRepo.addMiniappPlace(envelope.event)
       }
