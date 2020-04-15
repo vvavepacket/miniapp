@@ -119,6 +119,13 @@ class MiniappEntity extends PersistentEntity {
         else
           ctx.reply(state)
 
+    }.onCommand[AddPlaceToMiniapp, Done] {
+      case (AddPlaceToMiniapp(miniappId, placeId), ctx, state) =>
+        ctx.thenPersist(
+          AddedPlaceToMiniapp(miniappId, placeId)
+        ) { _ =>
+          ctx.reply(Done)
+        }
     }.onEvent {
       // Event handler for the GreetingMessageChanged event
       case (Uploaded(name, userId, version, versionKey, tags, createdTS, icon), state) =>
@@ -135,16 +142,6 @@ class MiniappEntity extends PersistentEntity {
         state.copy(status = "rejected")
       case (UploadedMiniappFile(_), state) =>
         state.copy(status = "uploaded mini app to s3")
-    }
-
-    // out of band
-    Actions().onCommand[AddPlaceToMiniapp, Done] {
-      case (AddPlaceToMiniapp(miniappId, placeId), ctx, state) =>
-        ctx.thenPersist(
-          AddedPlaceToMiniapp(miniappId, placeId)
-        ) { _ =>
-          ctx.reply(Done)
-        }
     }
 
   }
