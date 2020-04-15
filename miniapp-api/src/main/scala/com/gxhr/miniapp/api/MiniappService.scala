@@ -43,6 +43,8 @@ trait MiniappService extends Service {
 
   def addPlaceToMiniapp(): ServiceCall[AddPlaceToMiniapp, Done]
 
+  def getMiniappPlace(placeId: String): ServiceCall[NotUsed, Seq[String]]
+
   /**
     * This gets published to Kafka.
     */
@@ -63,7 +65,8 @@ trait MiniappService extends Service {
         pathCall("/reject/:id", reject _),
         pathCall("/status/:id", status _),
         pathCall("/summary", getSummary _),
-        pathCall("/addPlaceToMiniapp", addPlaceToMiniapp _)
+        pathCall("/addPlaceToMiniapp", addPlaceToMiniapp _),
+        pathCall("/miniappPlace/:id", getMiniappPlace _)
       )
       /*
       .withTopics(

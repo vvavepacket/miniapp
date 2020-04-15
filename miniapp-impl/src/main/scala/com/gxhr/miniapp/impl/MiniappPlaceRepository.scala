@@ -21,6 +21,12 @@ class MiniappPlaceRepository(db: Database) {
     db.run(miniappPlaces.result)
   }
 
+  def getMiniappsForPlace(placeId: String) = {
+    db.run(miniappPlaces.filter(i => i.placeId === placeId).map { x =>
+     x.miniappId
+    }.result)
+  }
+
   // manually create table because there is bug in github
   // https://github.com/slick/slick/issues/1999
   def createTable = miniappPlaces.schema.create
