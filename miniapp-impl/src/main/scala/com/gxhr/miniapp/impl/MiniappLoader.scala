@@ -57,5 +57,9 @@ abstract class MiniappApplication(context: LagomApplicationContext)
     wire[MiniappSummaryRepository]
   readSide.register(wire[MiniappSummaryProcessor])
 
+  lazy val miniappPlaceRepo: MiniappPlaceRepository =
+    wire[MiniappPlaceRepository]
+  readSide.register(wire[MiniappPlaceProcessor])
+
 
 }

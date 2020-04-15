@@ -136,6 +136,17 @@ class MiniappEntity extends PersistentEntity {
       case (UploadedMiniappFile(_), state) =>
         state.copy(status = "uploaded mini app to s3")
     }
+
+    // out of band
+    Actions().onCommand[AddPlaceToMiniapp, Done] {
+      case (AddPlaceToMiniapp(miniappId, placeId), ctx, state) =>
+        ctx.thenPersist(
+          AddedPlaceToMiniapp(miniappId, placeId)
+        ) { _ =>
+          ctx.reply(Done)
+        }
+    }
+
   }
 }
 
@@ -233,6 +244,12 @@ object UploadedMiniappFile {
   implicit val format: Format[UploadedMiniappFile] = Json.format
 }
 
+case class AddedPlaceToMiniapp(miniappId: String, placeId: String) extends MiniappEvent
+
+object AddedPlaceToMiniapp {
+  implicit val format: Format[AddedPlaceToMiniapp] = Json.format
+}
+
 /**
   * An event that represents a change in greeting message.
   */
@@ -301,6 +318,13 @@ case class UploadMiniappFile(id: String) extends MiniappCommand[Done]
 
 object UploadMiniappFile {
   implicit val format: Format[UploadMiniappFile] = Json.format
+}
+
+// out of band
+case class AddPlaceToMiniapp(miniappId: String, placeId: String) extends MiniappCommand[Done]
+
+object AddPlaceToMiniapp {
+  implicit val format: Format[AddPlaceToMiniapp] = Json.format
 }
 
 /**
@@ -380,6 +404,7 @@ object MiniappSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[Reject],
     JsonSerializer[Status],
     JsonSerializer[UploadMiniappFile],
+    JsonSerializer[AddPlaceToMiniapp],
     // event
     JsonSerializer[Uploaded],
     JsonSerializer[Edited],
@@ -387,7 +412,8 @@ object MiniappSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[SubmittedForReview],
     JsonSerializer[Approved],
     JsonSerializer[Rejected],
-    JsonSerializer[UploadedMiniappFile]
+    JsonSerializer[UploadedMiniappFile],
+    JsonSerializer[AddedPlaceToMiniapp]
   )
 
   /*

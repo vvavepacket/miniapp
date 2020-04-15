@@ -19,7 +19,8 @@ import scala.concurrent.ExecutionContext
   */
 class MiniappServiceImpl(
                           persistentEntityRegistry: PersistentEntityRegistry,
-                          val miniappSummaryRepo: MiniappSummaryRepository
+                          val miniappSummaryRepo: MiniappSummaryRepository,
+                          val miniappPlaceRepo: MiniappPlaceRepository
                         )(implicit ec: ExecutionContext) extends MiniappService {
   //readSide.register[MiniappEvent](new MiniappSummaryProcessor(db))
 
@@ -98,4 +99,14 @@ class MiniappServiceImpl(
     }
   }
   */
+  override def addPlaceToMiniapp() = ServiceCall { request =>
+    val miniappId = UUID.randomUUID().toString
+    entityRef(miniappId)
+      .ask(AddPlaceToMiniapp(request.miniappId, request.placeId))
+  }
+
+  override def getMiniappPlace(placeId: String) = ServiceCall { _ =>
+    miniappPlaceRepo.getMiniappsForPlace(placeId)
+  }
+
 }
