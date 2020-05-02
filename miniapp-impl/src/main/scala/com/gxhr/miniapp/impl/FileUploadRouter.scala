@@ -69,7 +69,7 @@ class FileUploadRouter(action: DefaultActionBuilder,
         val versionKey = request.body.dataParts.get("versionKey").get.mkString
         val dist = request.body.files.filter(_.key == "dist").head.ref.getAbsolutePath
         val sourceCode = request.body.files.filter(_.key == "sourceCode").head.ref.getAbsolutePath
-        miniappWebsiteBucketName = id + domainName
+        miniappWebsiteBucketName = id + "." + domainName
         // upload to s3
         uploadToS3(miniappZipBucketName, id + File.separator + versionKey + File.separator + "dist.zip", dist)
         uploadToS3(miniappZipBucketName, id + File.separator + versionKey + File.separator + "sourceCode.zip", sourceCode)
@@ -84,10 +84,10 @@ class FileUploadRouter(action: DefaultActionBuilder,
   }
 
   val clientRegion = Regions.AP_SOUTHEAST_1
-  val miniappZipBucketName = "test-goxhere-miniapp"
-  val accessKey = "AKIAXNR6UL6JA3H4XCWY"
-  val secretKey = "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"
-  val domainName = ".miniapp.test.goxhere.com"
+  val miniappZipBucketName = sys.env("MINIAPP_ZIP_BUCKET_NAME")
+  val accessKey = sys.env("ACCESS_KEY")
+  val secretKey = sys.env("SECRET_KEY")
+  val domainName = sys.env("DOMAIN_NAME")
   var miniappWebsiteBucketName = ""
 
   private def uploadToS3(bucketName: String, objectName: String, path: String) = {
@@ -119,7 +119,7 @@ class FileUploadRouter(action: DefaultActionBuilder,
         .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
         .build();
 
-      val newBucketName: String = id + domainName
+      val newBucketName: String = id + "." + domainName
 
       // check if bucket does not exist.. if does not, create it
       if (!s3Client.doesBucketExistV2(newBucketName)) {
